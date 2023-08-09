@@ -13,8 +13,8 @@ Adafruit_ADS1115 ads;
 void gearRecieved();
 void setupnano();
 void Touch_setup();
-void writeTxtDisplaySingle(char displayMessage);
-void removeTxtDisplaySingle(char displayMessage);
+void writeTxtDisplaySingle(String displayMessage, int x, int y);
+void removeTxtDisplaySingle(String displayMessage, int x, int y);
 void writeTxtDisplayString(String displayMessage, int x, int y);
 void removeTxtDisplayString(String displayMessage, int x, int y);
 
@@ -48,12 +48,13 @@ void setupVoltageReader();
 //it is playing up because of the tft screen is using the i2c communication protacol.
 // i need to use the "SPI" protocol, and /or run the i2c scanner on the uno for the tft screen address
 
-
-#define SerialDebugging true //---------------------------------------------------------------------------------change for not Serial Debugging.
+#define writeGearStringSingle true
+#define SerialDebugging false //---------------------------------------------------------------------------------change for not Serial Debugging.
 #define voltageDebug false    //---------------------------------------------------------------------------------
 #define Mainserialmessages true
+
 #define DigitalGearPins true
-#define SerialDebuggingReadVoltage false
+#define SerialDebuggingReadVoltage true
 
 #define i2cMode false
 #define GearDebuggingAutomatic false
@@ -451,8 +452,8 @@ int lastY = 0;
   uint16_t        Previous_Backround_Color1;
   
   int FontSizeStartUpMsg = 3;
-  int FontSizeMainTxt = 16;
-  int GuageTextSize = 1;
+  int FontSizeGearTxt = 16;
+  int FontSizeVoltsTxt = 1;
 
 #endif
 
@@ -511,7 +512,7 @@ void setup()
 
     //SD_setup();
     /*
-    tft.setTextSize(FontSizeMainTxt); //to display gears avaiable
+    tft.setTextSize(FontSizeGearTxt); //to display gears avaiable
 
     for (int i = 0; i < amountOfGears; i++)
     {
@@ -596,7 +597,7 @@ void gearRecieved()
 
                     //////Serial.printprint("\t\t\t\tremoving "); ////Serial.printprintln(lastGear);   
 
-                    tft.setTextSize(FontSizeMainTxt);
+                    tft.setTextSize(FontSizeGearTxt);
 
                     removeTxtDisplayString(lastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
                     delay(250); 
@@ -613,7 +614,7 @@ void gearRecieved()
                             //////Serial.printprint("printing "); ////Serial.println(replyFromSlave[1]);//delay(2500);
                             // now this can be tft.print to print once
 
-                        tft.setTextSize(FontSizeMainTxt);
+                        tft.setTextSize(FontSizeGearTxt);
 
                         writeTxtDisplayString(currentGear, 20, 0); //why is this one so slow???
                         delay(250); 
@@ -1088,7 +1089,8 @@ void Touch_setup() {
     amountOfGears = amountOfGears - 2; // -2 for extra in gear range or -4 for the string terminating characters
     tft.initR(INITR_144GREENTAB); // Init ST7735R chip, green tab
     tft.fillScreen(Display_Backround_Color);
-    tft.setTextColor(Display_Text_Color);
+    //tft.setTextColor(Display_Text_Color);
+    tft.setTextColor(Display_Text_Color,Display_Backround_Color);
     tft.setCursor(0, 0);
 
     #if (touchScreenMode == true)
@@ -1126,142 +1128,168 @@ void Touch_setup() {
         // -- wring over data on display to erase it
         delay(50); 
         removeTxtDisplayString(startingUpMsg, 0, 0);
-        tft.setTextSize(FontSizeMainTxt);
+        //tft.setTextSize(FontSizeGearTxt);
     #endif
 }
 
-void writeTxtDisplaySingle(char displayMessage) //single Characters
+void writeTxtDisplaySingle(String displayMessage, int x, int y) //single Characters
 {
-#if (TFTmode == true)
-    tft.setCursor(20, 0);
-    tft.setTextColor(Display_Text_Color);
-    #if (SerialDebugging == true )
-        #if (Mainserialmessages == true)
-            Serial.print("unoWriteSingle: "); Serial.println(displayMessage);
+    #if (TFTmode == true)
+        tft.setCursor(x, y);
+        //tft.setTextColor(Display_Text_Color);
+        tft.setTextColor(Display_Text_Color);
+        #if (SerialDebugging == true )
+            #if (Mainserialmessages == true)
+                Serial.print("unoWriteSingle: "); Serial.println(displayMessage);
+            #endif
         #endif
+        tft.setTextSize(FontSizeGearTxt);
+        tft.print(displayMessage);
+        //delay(100);
+
     #endif
-    tft.print(displayMessage);
-    //delay(100);
 
-#endif
-
-#if(RCAmode == true)
-    TV.println(displayMessage);
-    TV.delay(3000);
-    TV.clear_screen();
-#endif
+    #if(RCAmode == true)
+        TV.println(displayMessage);
+        TV.delay(3000);
+        TV.clear_screen();
+    #endif
 }
-void removeTxtDisplaySingle(char displayMessage) //single Characters
+void removeTxtDisplaySingle(String displayMessage, int x, int y) //single Characters
 {
-#if (TFTmode == true)
-    tft.setCursor(20, 0);
-    tft.setTextColor(Display_Backround_Color);
-    #if (SerialDebugging == true )
-        #if (Mainserialmessages == true)
-            Serial.print("unoRemoveSingle: "); Serial.println(displayMessage);
+    #if (TFTmode == true)
+        tft.setCursor(x, y);
+        tft.setTextColor(Display_Backround_Color);
+        #if (SerialDebugging == true )
+            #if (Mainserialmessages == true)
+                Serial.print("unoRemoveSingle: "); Serial.println(displayMessage);
+            #endif
         #endif
-    #endif
-    tft.print(displayMessage);
-    //delay(100);
+        tft.setTextSize(FontSizeGearTxt);
+        tft.print(displayMessage);
+        //delay(100);
 
-#endif
-#if(RCAmode == true)
-    TvDisplayArray(&displayMessage);
-#endif
+
+
+
+
+    #endif
+    #if(RCAmode == true)
+        TvDisplayArray(&displayMessage);
+    #endif
 }
-//-------------------------------
+
 void writeTxtDisplayString(String displayMessage, int x, int y)
 {//                 string of characters  
 
-#if (TFTmode == true)
+    #if (TFTmode == true)
+    
+        //int lenDisplayMsg = displayMessage.length();   
+        //Wire.endTransmission(SLAVE_ADDRESS);
+        #if (i2cMode == true )
+            if (displayMessage == errormessage)
+            {
+                tft.setCursor(x, y);
+                tft.setTextColor(Display_Text_Color);
+                tft.setTextColor(Display_Text_Color,Display_Backround_Color);
+                tft.setTextSize(2);
+                tft.print(displayMessage);
+            }
+            //else {
+            #endif
+            const char* displayMessageChar = displayMessage.c_str();
+
+            if(strcmp(displayMessageChar,startingUpMsg) == 0 ){
+                tft.setTextSize(FontSizeStartUpMsg);
+            }
+            else{
+                tft.setTextSize(FontSizeVoltsTxt);
+            }
+            tft.setCursor(x, y);
+            //tft.setTextColor(Display_Text_Color);
+            tft.setTextColor(Display_Text_Color,Display_Backround_Color);
 
 
-    //int lenDisplayMsg = displayMessage.length();   
-    //Wire.endTransmission(SLAVE_ADDRESS);
+            //tft.setTextSize(FontSizeGearTxt);
+            //Previous_Backround_Color = tft.readPixel(x, y);
+
+            //whats faster to print, entire thing at once or 1 character at a time
+            /*for (int i = 0; i <= lenDisplayMsg; i++) {
+                //prevColorArray[Previous_Backround_Color] = tft.readPixel(x+i, y);
+
+                //tft.print(displayMessage[i]);
+                //prevColorArray[Previous_Backround_Color]++;
+            }*/
+            #if (SerialDebugging == true )
+                #if (Mainserialmessages == true)
+                    Serial.print("unoWriteString: "); Serial.println(displayMessage); // over here
+                #endif
+            #endif
+            tft.print(displayMessage);
+            //delay(50); 
+    #if (tftModeDebug == true)
+            ////Serial.print("\n\t\tprinting "); ////Serial.println(displayMessage);
+    #endif
     #if (i2cMode == true )
-      if (displayMessage == errormessage)
-      {
-          tft.setCursor(x, y);
-          tft.setTextColor(Display_Text_Color);
-          tft.setTextSize(2);
-          tft.print(displayMessage);
-      }
-      //else {
+        //}
+        //Wire.beginTransmission(SLAVE_ADDRESS);
     #endif
 
-        tft.setCursor(x, y);
-        tft.setTextColor(Display_Text_Color);
-
-
-        //tft.setTextSize(FontSizeMainTxt);
-        //Previous_Backround_Color = tft.readPixel(x, y);
-
-        //whats faster to print, entire thing at once or 1 character at a time
-        /*for (int i = 0; i <= lenDisplayMsg; i++) {
-            //prevColorArray[Previous_Backround_Color] = tft.readPixel(x+i, y);
-
-            //tft.print(displayMessage[i]);
-            //prevColorArray[Previous_Backround_Color]++;
-        }*/
-        #if (SerialDebugging == true )
-            #if (Mainserialmessages == true)
-                Serial.print("unoWriteString: "); Serial.println(displayMessage); // over here
-            #endif
-        #endif
-        tft.print(displayMessage);
-        //delay(50); 
-  #if (tftModeDebug == true)
-          ////Serial.print("\n\t\tprinting "); ////Serial.println(displayMessage);
-  #endif
-  #if (i2cMode == true )
-      //}
-      //Wire.beginTransmission(SLAVE_ADDRESS);
-  #endif
-
-#endif
+    #endif
 }
 void removeTxtDisplayString(String displayMessage, int x, int y)
 {//                   string of characters   
-#if (TFTmode == true)
+    #if (TFTmode == true)
     //int lenDisplayMsg = displayMessage.length();
     //Wire.endTransmission(SLAVE_ADDRESS);
-    #if (i2cMode == true ) 
-      if (displayMessage == errormessage)
-      {
-          tft.setCursor(x, y);
-          tft.setTextColor(Display_Backround_Color);
-          tft.setTextSize(2);
-          tft.print(displayMessage);
-      }
-   #endif
-    //up to here !!
-    //need to create code for determing incoming data is a gear range or if it will be volts data
-    //and set the text size accordingly
+        #if (i2cMode == true ) 
+            if (displayMessage == errormessage)
+            {
+                tft.setCursor(x, y);
+                tft.setTextColor(Display_Backround_Color);
+                tft.setTextSize(2);
+                tft.print(displayMessage);
+            }
+        #endif
+        //up to here !!
+        //need to create code for determing incoming data is a gear range or if it will be volts data
+        //and set the text size accordingly?
+        //or just hardcode it so gears data never enter this statement.
+        const char* displayMessageChar = displayMessage.c_str();
 
-    tft.setCursor(x, y);
-    tft.setTextColor(Display_Backround_Color);
-    //whats faster to print, entire thing at once or 1 character at a time
-    /*for (int i = 0; i <= lenDisplayMsg; i++) {
+        if(strcmp(displayMessageChar,startingUpMsg) == 0 ){
+            tft.setTextSize(FontSizeStartUpMsg);
+        }
+        else{
+            tft.setTextSize(FontSizeVoltsTxt);
+        }
+
+        //tft.setTextSize(FontSizeStartUpMsg);
+        //tft.setTextSize(FontSizeVoltsTxt);
+        tft.setCursor(x, y);
+        tft.setTextColor(Display_Backround_Color);
+        //whats faster to print, entire thing at once or 1 character at a time
+        /*for (int i = 0; i <= lenDisplayMsg; i++) {
 
         //tft.setTextColor(prevColorArray[Previous_Backround_Color]);
         //tft.print(displayMessage[i]);
         //prevColorArray[Previous_Backround_Color]++;
-    }*/
+        }*/
 
-    //tft.setTextColor(Previous_Backround_Color);
-    #if (SerialDebugging == true )
-        #if (Mainserialmessages == true)
-            Serial.print("unoRemoveString: "); Serial.println(displayMessage); //over here
+        //tft.setTextColor(Previous_Backround_Color);
+        #if (SerialDebugging == true )
+            #if (Mainserialmessages == true)
+                Serial.print("unoRemoveString: "); Serial.println(displayMessage); //over here
+            #endif
         #endif
-    #endif
-    tft.print(displayMessage);
-    //delay(50); 
-    //Serial.print("\n\t\t\tUNOremoving "); Serial.print(displayMessage);  
-    #if (i2cMode == true )
-    //}
-    #endif
+        tft.print(displayMessage);
+        //delay(50); 
+        //Serial.print("\n\t\t\tUNOremoving "); Serial.print(displayMessage);  
+        #if (i2cMode == true )
+        //}
+        #endif
     //Wire.beginTransmission(SLAVE_ADDRESS);
-#endif
+    #endif
 }
 
 //for touch screen funtions
@@ -1269,7 +1297,7 @@ void removeTxtDisplayString(String displayMessage, int x, int y)
 
 void timerFunction()
 { // need to find out why this doesn't work all the time
-//perhaps use //Serial.monitor to check the seconds. it hink it may be messing up because if the seconds go over 10 it has error 404
+//perhaps use //Serial.monitor to check the seconds. i think it may be messing up because if the seconds go over 10 it has error 404
     #if (TFTmode == true)
         if (millis() >= (previousTime)) {
             previousTime = previousTime + 1000;  // use 100000 for uS
@@ -1293,13 +1321,13 @@ void timerFunction()
     #endif
 }
 void onTimeActions()
-{
+{ //this lets me display nutual gear after set time period
 #if (TFTmode == true)
 
       if (seconds == 60)
       {
         #if (TFTmode == true)
-                tft.setTextSize(FontSizeMainTxt);
+                tft.setTextSize(FontSizeGearTxt);
         #endif
                 
           removeTxtDisplayString(lastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range 
@@ -1344,7 +1372,6 @@ void setupnano() {
         Serial.println("finished pins configuring");
     #endif
 }
-
 void loopNano() {
     
     //TV.print(help);
@@ -1471,8 +1498,20 @@ void sendToUnoEventnano() {
                             //tft.fillScreen(Display_Backround_Color);
                                                             //removeTxtDisplayString(replyFromSlave, 20, 0); //over here temp fix
                             //delay(10); 
+                            #if(SerialDebugging == true )
+                                #if (Mainserialmessages == true)
+                                    Serial.println("/t/tis it over here2??");
+                                #endif
+                            #endif
 
-                            removeTxtDisplayString(trueLastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
+                            #if(writeGearStringSingle == true)
+                                removeTxtDisplaySingle(trueLastGear, 20, 0);
+                            #endif
+                            #if(writeGearStringSingle == false)
+                                removeTxtDisplayString(trueLastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
+                            #endif
+
+
                             //delay(50); 
                             //removeTxtDisplaySingle(*lastGear); 
                             inGearUno = false;
@@ -1509,8 +1548,18 @@ void sendToUnoEventnano() {
             //Serial.println("i know i am here?");
 
             if (inGearUno == false) {// this stops it writing to display over and over again.
+                #if(SerialDebugging == true )
+                    #if (Mainserialmessages == true)
+                        Serial.println("/t/tis it over here1??");
+                    #endif
+                #endif
 
-                writeTxtDisplayString(currentGear, 20, 0); //why is this one so slow???
+                #if(writeGearStringSingle == true)
+                    writeTxtDisplaySingle(currentGear, 20, 0);
+                #endif
+                #if(writeGearStringSingle == false)
+                    writeTxtDisplayString(currentGear, 20, 0); //why is this one so slow???
+                #endif
                 //delay(50); 
                 inGearUno = true;
             }
@@ -1521,7 +1570,6 @@ void sendToUnoEventnano() {
         {
             timerFunction();
             onTimeActions();
-
         }
 
         #if (RCAmode == true)
@@ -1531,24 +1579,23 @@ void sendToUnoEventnano() {
     
 }
 //I2C functions
-//---------------------------------------------------------------------------------------------
 void GearSelectnano()
 {
 
-#if (GearNormalMode == true) //i could add the or if both debugging are off
-    readSwitchesnano();
-#endif // (GearDebuggingAutomatic == false)
+    #if (GearNormalMode == true) //i could add the or if both debugging are off
+        readSwitchesnano();
+    #endif // (GearDebuggingAutomatic == false)
 
 
-#if (GearDebuggingManual == true)
-    //debugReadSwitchesnano();
-    debugSerialInputSwitchesnano();
-    debugReadSwitchesnano();
-#endif // (GearDebuggingAutomatic == true)
+    #if (GearDebuggingManual == true)
+        //debugReadSwitchesnano();
+        debugSerialInputSwitchesnano();
+        debugReadSwitchesnano();
+    #endif // (GearDebuggingAutomatic == true)
 
-#if ( GearDebuggingAutomatic  == true)
-    debugReadSwitchesnano();
-#endif
+    #if ( GearDebuggingAutomatic  == true)
+        debugReadSwitchesnano();
+    #endif
     //1st/2nd gears
     if (stateofsensorLeft == true) {
 
@@ -1805,13 +1852,9 @@ void nuturalTimerFunctionnano() {
 
 
     currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
-
-
-
-
     // might be able to do a simalir thing .. i just need to read the current mills. and after I'VE counted the time. have the if statement trigger on that current mills number
 
-//    if (currentMillis >= period)  // if greater than should probally do if the value is inbetween this range...
+    //if (currentMillis >= period)  // if greater than should probally do if the value is inbetween this range...
     
     if (currentMillis - startMillis >= period)
     {
@@ -1844,6 +1887,10 @@ void readSwitchesnano()
         float temp2 = analogRead(switchDOWN); delay(10);
         float temp3 = analogRead(switchLEFT); delay(10);
         float temp4 = analogRead(switchRIGHT); delay(10);
+        float voltageUP;
+        float voltageDOWN;
+        float voltageLEFT;
+        float voltageRIGHT;
     #endif
     #if (DigitalGearPins == true)
         float temp1 = digitalRead(switchUP); delay(10);
@@ -1851,10 +1898,6 @@ void readSwitchesnano()
         float temp3 = digitalRead(switchLEFT); delay(10);
         float temp4 = digitalRead(switchRIGHT); delay(10);
     #endif
-    float voltageUP;
-    float voltageDOWN;
-    float voltageLEFT;
-    float voltageRIGHT;
 
     #if (DigitalGearPins == flase)
         if (temp1 < 1000) {
@@ -1969,51 +2012,51 @@ void readSwitchesnano()
         }*/
     #endif
 
-#if (voltageDebug == true)
-    #if (DigitalGearPins == false)
-        #if (Mainserialmessages == true)
-            Serial.print("\tup: ");Serial.println(voltageUP); 
-            Serial.print("\t"); Serial.println(temp1);
+    #if (voltageDebug == true)
+        #if (DigitalGearPins == false)
+            #if (Mainserialmessages == true)
+                Serial.print("\tup: ");Serial.println(voltageUP); 
+                Serial.print("\t"); Serial.println(temp1);
 
-            Serial.print("\t\t\tdown: ");Serial.println(voltageDOWN); 
-            Serial.print("\t\t\t"); Serial.println(temp2);
+                Serial.print("\t\t\tdown: ");Serial.println(voltageDOWN); 
+                Serial.print("\t\t\t"); Serial.println(temp2);
 
-            Serial.print("\t\t\t\t\t\tleft: ");Serial.println(voltageLEFT); 
-            Serial.print("\t\t\t\t\t\t"); Serial.println(temp3);
+                Serial.print("\t\t\t\t\t\tleft: ");Serial.println(voltageLEFT); 
+                Serial.print("\t\t\t\t\t\t"); Serial.println(temp3);
 
-            Serial.print("\t\t\t\t\t\t\t\t\t\tright: ");Serial.println(voltageRIGHT); 
-            Serial.print("\t\t\t\t\t\t\t\t\t\t"); Serial.println(temp4);
-            delay(1250); 
+                Serial.print("\t\t\t\t\t\t\t\t\t\tright: ");Serial.println(voltageRIGHT); 
+                Serial.print("\t\t\t\t\t\t\t\t\t\t"); Serial.println(temp4);
+                delay(1250); 
+            #endif
+        #endif
+
+        #if (DigitalGearPins == true)
+            #if (Mainserialmessages == true)
+                Serial.print("\tup: ");Serial.println(voltageUP); 
+                Serial.print("\t"); Serial.println(temp1);
+
+                Serial.print("\t\t\tdown: ");Serial.println(voltageDOWN); 
+                Serial.print("\t\t\t"); Serial.println(temp2);
+
+                Serial.print("\t\t\t\t\t\tleft: ");Serial.println(voltageLEFT); 
+                Serial.print("\t\t\t\t\t\t"); Serial.println(temp3);
+
+                Serial.print("\t\t\t\t\t\t\t\t\t\tright: ");Serial.println(voltageRIGHT); 
+                Serial.print("\t\t\t\t\t\t\t\t\t\t"); Serial.println(temp4);
+                delay(1250); 
+            #endif
         #endif
     #endif
-
-    #if (DigitalGearPins == true)
-        #if (Mainserialmessages == true)
-            Serial.print("\tup: ");Serial.println(voltageUP); 
-            Serial.print("\t"); Serial.println(temp1);
-
-            Serial.print("\t\t\tdown: ");Serial.println(voltageDOWN); 
-            Serial.print("\t\t\t"); Serial.println(temp2);
-
-            Serial.print("\t\t\t\t\t\tleft: ");Serial.println(voltageLEFT); 
-            Serial.print("\t\t\t\t\t\t"); Serial.println(temp3);
-
-            Serial.print("\t\t\t\t\t\t\t\t\t\tright: ");Serial.println(voltageRIGHT); 
-            Serial.print("\t\t\t\t\t\t\t\t\t\t"); Serial.println(temp4);
-            delay(1250); 
-        #endif
-    #endif
-#endif
 }
 void debugReadSwitchesnano()
 {
-#if (GearDebuggingAutomatic == true)
-    if (debugGearTimer >= 7) {
-        debugGearTimer = 0;
-    }
+    #if (GearDebuggingAutomatic == true)
+        if (debugGearTimer >= 7) {
+            debugGearTimer = 0;
+        }
 
-    delay(1500);
-#endif
+        delay(1500);
+    #endif
 
     if (debugGearTimer == 0) //start with all off
     {
@@ -2133,7 +2176,6 @@ void debugSerialInputSwitchesnano()
 
 int getLastGearnano()
 {
-
     if (loopCounter == 0) {
         *trueCurrentGear = writeOrRemove[1];
     }
@@ -2164,50 +2206,49 @@ int getLastGearnano()
         return 1;
     }
 }
-//---------------------------------------------------------------------------------------------
-//tvout 
-    #if (RCAmode == true )
-    void tvoutDemo() {
+//tvout
+#if (RCAmode == true )
+void tvoutDemo() {
 
-        TV.clear_screen();
+    TV.clear_screen();
 
-        x = 0;
-        y = 0;
-        for (char i = 32; i < 127; i++) {              // this prints the alt code characters from 32 -127
-            TV.print_char(x * 6, y * 8, i);                    // the res of the characters in pixel size ?
-            x++;
-            if (x >= TV.char_line()) {                   // i think this one is for if the character prints and gets to the end of the display make new line and continue
-                y++;
-                x = 0;
-            }
+    x = 0;
+    y = 0;
+    for (char i = 32; i < 127; i++) {              // this prints the alt code characters from 32 -127
+        TV.print_char(x * 6, y * 8, i);                    // the res of the characters in pixel size ?
+        x++;
+        if (x >= TV.char_line()) {                   // i think this one is for if the character prints and gets to the end of the display make new line and continue
+            y++;
+            x = 0;
         }
-
-        TV.delay(500);
-        TV.clear_screen();
-        TV.println("Fill the Screen\nPixel by Pixel");
-        TV.delay(500);
-        TV.clear_screen();
-        for (x = 0; x < TV.hres(); x++) {
-            for (y = 0; y < TV.vres(); y++) {
-                TV.set_pixel(x, y, 1); //this is the color 0= black 1 = white
-            }
-        }
-        TV.delay(500);
-        TV.clear_screen();
-
-
-        TV.print("Draw some lines");
-        TV.delay(500);
-        x = TV.hres() - 1;
-        for (y = 0; y < TV.vres(); y++) {
-            TV.draw_line(0, y, x - y, y, 2);
-        }
-        TV.delay(500);
-        TV.clear_screen();
-        
     }
-    void TvDisplayArray(char TVdisplayMessage[])
-    {//                                            array of characters  
+
+    TV.delay(500);
+    TV.clear_screen();
+    TV.println("Fill the Screen\nPixel by Pixel");
+    TV.delay(500);
+    TV.clear_screen();
+    for (x = 0; x < TV.hres(); x++) {
+        for (y = 0; y < TV.vres(); y++) {
+            TV.set_pixel(x, y, 1); //this is the color 0= black 1 = white
+        }
+    }
+    TV.delay(500);
+    TV.clear_screen();
+
+
+    TV.print("Draw some lines");
+    TV.delay(500);
+    x = TV.hres() - 1;
+    for (y = 0; y < TV.vres(); y++) {
+        TV.draw_line(0, y, x - y, y, 2);
+    }
+    TV.delay(500);
+    TV.clear_screen();
+    
+}
+void TvDisplayArray(char TVdisplayMessage[])
+{//                                            array of characters  
     #if (RCAmode == true )
         delay(200);
 
@@ -2216,8 +2257,8 @@ int getLastGearnano()
         TV.clear_screen();
 
     #endif
-    }
-    void TVoutSetup() {
+}
+void TVoutSetup() {
     #if (RCAmode == true )
         x = 0;
         y = 0;
@@ -2230,35 +2271,44 @@ int getLastGearnano()
         TvDisplayArray(startingUpMsg);
         TV.delay(1000);
     #endif
-    }
-    #endif
+}
+#endif
 
 void readVoltage()
 {
+    int x = 0;
+    int y = 120;
+    char voltstr[20] = "Volts: ";
     #if (SerialDebuggingReadVoltage == true )
         Serial.println("starting voltage reader");
     #endif
     int16_t adc0; // 16 bits ADC read of input A0
-    //Serial.println("stuck1");
     adc0 = ads.readADC_SingleEnded(0);
-    //Serial.println("stuck2");
     voltage = ((adc0 + calib) * 0.1875)/1000;
-    //Serial.println("stuck3");
 
     //unsigned long currentMillis = millis();
     vbat = voltage/Radjust;
 
-
     //Prevent displaying negative voltage when battery is disconnected  
-    if (vbat < 0.1) 
+    if (vbat < 0.1)
     {
         vbat = 0.01;
     }
-    #if (Mainserialmessages == true)
-        Serial.print(vbat,2);
-        Serial.println("Volts");
+    #if (SerialDebuggingReadVoltage == true)
+        Serial.print("Volts: ");
+        Serial.println(vbat,2);
     #endif
-    //u8g2.sendBuffer();          // transfer internal memory to the display
+    char vOut[6];
+    dtostrf(vbat,4,2, vOut);
+    
+    writeTxtDisplayString(voltstr,x,y);
+    writeTxtDisplayString(vOut,x+40,y);
+    //removeTxtDisplayString(vOut,x+40,y);
+    #if (SerialDebuggingReadVoltage == true)
+        Serial.print("\t\t\t\t");
+        Serial.println(voltstr);
+    #endif
+
     //delay(1);
     #if (SerialDebuggingReadVoltage == true )
         Serial.println("finished voltage reader");
@@ -2267,14 +2317,17 @@ void readVoltage()
 }
 void setupVoltageReader()
 {
+    char ADSerror[25] = "Failed to initialize ADS";
     #if (SerialDebuggingReadVoltage == true )
         Serial.println("setting up voltage reader");
     #endif
     ads.begin();
-    //if (!ads.begin()) {
-    //    Serial.println("Failed to initialize ADS.");
-        //while (1);
-    //}
+    if (!ads.begin()) {
+        #if (Mainserialmessages == true)
+            Serial.println("Failed to initialize ADS.");
+        #endif
+        writeTxtDisplayString(ADSerror,0,80);
+    }
     // Setup 3V comparator on channel 0
     //ads.startComparator_SingleEnded(0, 1000);
     #if (SerialDebuggingReadVoltage == true )
