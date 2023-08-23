@@ -5,8 +5,7 @@
  Author:  alexj
 */
 #include <Arduino.h>
-#include <Adafruit_ADS1X15.h>
-#include <Wire.h>
+#include <Adafruit_ADS1X15.h> //https://www.ebay.com.au/itm/303971402874 // ADS1115 ADC 4 Channel 16Bit I2C
 Adafruit_ADS1115 ads;
 //---------------------------------------------------------------------------------
 //function defitions 
@@ -48,20 +47,19 @@ void setupVoltageReader();
 //it is playing up because of the tft screen is using the i2c communication protacol.
 // i need to use the "SPI" protocol, and /or run the i2c scanner on the uno for the tft screen address
 
-#define writeGearStringSingle true
+
 #define SerialDebugging false //---------------------------------------------------------------------------------change for not Serial Debugging.
 #define voltageDebug false    //---------------------------------------------------------------------------------
-#define Mainserialmessages true
+#define Mainserialmessages flase
+#define SerialDebuggingReadVoltage flase
 
 #define DigitalGearPins true
-#define SerialDebuggingReadVoltage true
-
 #define i2cMode false
 #define GearDebuggingAutomatic false
 #define GearDebuggingManual false
 #define GearNormalMode true
 
-
+#define writeGearStringSingle true
 #define TFTmode true
 #define tftModeDebug false
 #define TouchScreenMode false
@@ -452,8 +450,8 @@ int lastY = 0;
   uint16_t        Previous_Backround_Color1;
   
   int FontSizeStartUpMsg = 3;
-  int FontSizeGearTxt = 16;
-  int FontSizeVoltsTxt = 1;
+  int FontSizeGearTxt = 15;
+  int FontSizeVoltsTxt = 2;
 
 #endif
 
@@ -600,10 +598,6 @@ void gearRecieved()
                     tft.setTextSize(FontSizeGearTxt);
 
                     removeTxtDisplayString(lastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
-                    delay(250); 
-                    //removeTxtDisplaySingle(*lastGear); 
-
-
                     inGearUno = false;
                 }
                 else if (replyFromSlave[0] == *"1") //writing
@@ -617,7 +611,6 @@ void gearRecieved()
                         tft.setTextSize(FontSizeGearTxt);
 
                         writeTxtDisplayString(currentGear, 20, 0); //why is this one so slow???
-                        delay(250); 
                         inGearUno = true;
                     }
 
@@ -686,10 +679,7 @@ void gearRecieved()
 
                 //////Serial.print("\t\t\t\tremoving "); ////Serial.println(lastGear);   
                 removeTxtDisplayString(lastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
-                delay(250); 
-                //removeTxtDisplaySingle(*lastGear); 
-
-
+                delay(250);  
                 inGearUno = false;
             }
             else if (replyFromSlave[0] == *"1") //writing
@@ -755,21 +745,13 @@ void gearRecieved()
     // if the current recieved data is the same as the last then ignore. but if it is different then make the change.
         if (replyFromSlave[0] == *"0")//removing
         {
-            //Serial.println("am i here?");
-            //Serial.println("is magic in here ?");
-
             //removeTxtDisplayString(lastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
             //delay(150); 
-            //removeTxtDisplaySingle(*lastGear); 
             inGearUno = false;
         }
         else if (replyFromSlave[0] == *"1") //writing
         {
-            //Serial.println("i know i am here?");
-
             if (inGearUno == false) {// this stops it writing to display over and over again.
-
-                
                 //writeTxtDisplayString(currentGear, 20, 0); //why is this one so slow???
                 //delay(20); 
                 inGearUno = true;
@@ -788,7 +770,7 @@ void gearRecieved()
     //maybe i can just use the "ingear" to tell it when to request so it doesn't constantly ask ..
         //give me message "0N1", i'm expecting the size of that message
 
-    #endif // (i2cMode == true)
+    #endif
 }
 
 //main loops
@@ -1167,12 +1149,6 @@ void removeTxtDisplaySingle(String displayMessage, int x, int y) //single Charac
         #endif
         tft.setTextSize(FontSizeGearTxt);
         tft.print(displayMessage);
-        //delay(100);
-
-
-
-
-
     #endif
     #if(RCAmode == true)
         TvDisplayArray(&displayMessage);
@@ -1510,10 +1486,6 @@ void sendToUnoEventnano() {
                             #if(writeGearStringSingle == false)
                                 removeTxtDisplayString(trueLastGear, 20, 0);  //why is this one so slow??? i'll have to try gear range
                             #endif
-
-
-                            //delay(50); 
-                            //removeTxtDisplaySingle(*lastGear); 
                             inGearUno = false;
 
 
@@ -2322,12 +2294,12 @@ void setupVoltageReader()
         Serial.println("setting up voltage reader");
     #endif
     ads.begin();
-    if (!ads.begin()) {
+    /*if (!ads.begin()) {
         #if (Mainserialmessages == true)
             Serial.println("Failed to initialize ADS.");
         #endif
-        writeTxtDisplayString(ADSerror,0,80);
-    }
+        writeTxtDisplayString(ADSerror,0,100);
+    }*/
     // Setup 3V comparator on channel 0
     //ads.startComparator_SingleEnded(0, 1000);
     #if (SerialDebuggingReadVoltage == true )
